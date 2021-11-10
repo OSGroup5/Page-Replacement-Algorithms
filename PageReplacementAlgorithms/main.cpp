@@ -4,11 +4,11 @@
 #include <vector>
 #include <iostream>
 
-#define NUMBER_OF_FRAMES 10
+#define NUMBER_OF_FRAMES 1000
 #define DESIRED_STRING_LENGTH 100000
 #define RATE_OF_MOTION 200
 #define START_LOCATION 0
-#define VIRTUAL_MEMORY_SIZE 262144 // 2^18
+#define VIRTUAL_MEMORY_SIZE 1048576 // 2^20 
 
 using namespace std;
 
@@ -21,11 +21,11 @@ using namespace std;
     @param m rate of motion
     @param t virtual memory size
     @param size desired length of reference string
-    @return returns the genereated reference string
+    @return returns the generated reference string, an array of integers
 */
-string generateRS(int P, int s, int e, int m, double t, int size)
+vector<int> generateRS(int P, int s, int e, int m, double t, int size)
 {
-    string rs;
+    vector<int> rs;
     while (rs.size() < size)
     {
         random_device rdi;
@@ -33,7 +33,7 @@ string generateRS(int P, int s, int e, int m, double t, int size)
         uniform_int_distribution<mt19937::result_type> disti(s, s + e);
         for (int i = 0; i < m; ++i)
         {
-            rs += to_string(disti(rng));
+            rs.emplace_back(disti(rng));
         }
 
         random_device rdf;
@@ -64,7 +64,7 @@ string generateRS(int P, int s, int e, int m, double t, int size)
     @param frames the frames containing resident pages
     @return number of page faults occurred.
 */
-int algo1(const string& rs, vector<int> frames)
+int algo1(const vector<int>& rs, vector<int> frames)
 {
     return 1;
 }
@@ -77,15 +77,17 @@ int algo1(const string& rs, vector<int> frames)
     @param frames the frames containing resident pages
     @return number of page faults occurred.
 */
-int algo2(const string& rs, vector<int> frames)
+int optimalPageReplacementAlgorithm(const vector<int>& rs, vector<int> frames)
 {
-    return 1;
+    int nFaults = 0;
+    return nFaults;
 }
 
 int main()
 {
-    vector<string> RS_set;
-    vector<int> e_set = { 5, 10, 20, 50, 100 };
+
+    vector<vector<int>> RS_set;
+    vector<int> e_set = { 5, 10, 20, 50, 100, 1000, 3000 };
     vector<float> t_set = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
     unordered_map<int, int> page_faults1;
     unordered_map<int, int> page_faults2;
@@ -105,11 +107,8 @@ int main()
     for (auto& frame : frames)
     {
         frame = resident_page;
-        ++resident_page;
-        if (resident_page > 9)
-        {
-            resident_page = 0;
-        }
+        int frameSize = VIRTUAL_MEMORY_SIZE / NUMBER_OF_FRAMES;
+        resident_page += frameSize;
     }
 
     // implement and run 2 page replacement algorithms.
@@ -118,8 +117,8 @@ int main()
     {
         int e = e_set[i];
         page_faults1[e] += algo1(rs, frames);
-        page_faults2[e] += algo2(rs, frames);
-        i = (i + 1) % 5;
+        page_faults2[e] += optimalPageReplacementAlgorithm(rs, frames);
+        i = (i + 1) % 7;
     }
 
     // print results and plot by hand.
@@ -128,7 +127,7 @@ int main()
     {
         cout << "e = " << e << ", faults = " << page_faults1[e] << "\n";
     }
-    cout << "\nAlgorithm 2\n";
+    cout << "\nOptimal Page Replacement Algorithm\n";
     for (auto e : e_set)
     {
         cout << "e = " << e << ", faults = " << page_faults2[e] << "\n";
