@@ -1,7 +1,10 @@
 #include <random>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <queue>
 #include <vector>
+#include <climits>
 #include <iostream>
 
 #define NUMBER_OF_FRAMES 1000
@@ -57,16 +60,133 @@ vector<int> generateRS(int P, int s, int e, int m, double t, int size)
     return rs;
 }
 /*
-    Processes a reference string using one of optimal, FIFO, LRU algorithms.
+    Processes a reference string using FIFO algorithm, 
+    which removes the page that has been resident in memory for the longest time.
+
+    @param rs reference string to be processed
+    @param frames the frames containing resident pages
+    @return number of page faults occurred.
+*/
+int firstInLastOutAlgorithm(const vector<int>& rs, vector<int> frames)
+{
+    // Number of Page Faults Found
+    int nFaults = 0;
+    // Number of Pages
+    int nPages = rs.size();
+    // Number of Frames
+    int nFrames = frames.size();
+    // An unordered set of our resident pages currently in memory
+    unordered_set<int> residentPageSet;
+    // A FIFO queue data structure to track pages
+    queue<int> fifoPages;
+
+    // Go through all pages in the RS
+    for(int i = 0; i < nPages; i++){
+        // Grab the current page from the RS
+        int currentPage = rs.at(i);
+        // Check if we are within our number of frames
+        if(residentPageSet.size() < nFrames){
+            // Is the page resident?
+            if(residentPageSet.find(currentPage)==residentPageSet.end())
+            {
+                // Page is not already resident, so add it to the set
+                residentPageSet.insert(currentPage);
+                // Increase the number of faults
+                nFaults++;
+                // Add this new page to the end of our queue
+                fifoPages.push(currentPage);
+            }
+        }
+        // When all frames are full and one needs to be removed
+        else {
+            // Is the page resident?
+            if(residentPageSet.find(currentPage)==residentPageSet.end()){
+                // Page is not already resident
+                // Save the resident page that was first in the queue
+                int firstIn = fifoPages.front();
+                // Remove it from queue
+                fifoPages.pop();
+                // Remove it from our resident page set
+                residentPageSet.erase(firstIn);
+                // Add in our current non resident page
+                residentPageSet.insert(currentPage);
+                // Add it to the queue
+                fifoPages.push(currentPage);
+                // Increase the number of faults
+                nFaults++;
+            }
+        }
+    }
+    return nFaults;
+}
+
+/*
+    Processes a reference string using LRU algorithm, 
+    which selects the page that has not been referenced for the longest time.
     Returns the number of page faults occurred.
 
     @param rs reference string to be processed
     @param frames the frames containing resident pages
     @return number of page faults occurred.
 */
-int algo1(const vector<int>& rs, vector<int> frames)
+int leastRecentlyUsedAlgorithm(const vector<int>& rs, vector<int> frames)
 {
-    return 1;
+    // Number of Page Faults Found
+    int nFaults = 0;
+    // Number of Pages
+    int nPages = rs.size();
+    // Number of Frames
+    int nFrames = frames.size();
+    // An unordered set of our resident pages currently in memory
+    unordered_set<int> residentPages;
+    // An unordered map of the least recently used pages in memory
+    unordered_map<int, int> numbersOfRS;
+ 
+    // Go through all pages in the RS
+    for (int i = 0; i < nPages; i++){
+        // Grab the current page from the RS
+        int currentPage = rs.at(i);
+        // Check if we are within our number of frames
+        if (residentPages.size() < nFrames){
+            // Is the page resident?
+            if (residentPages.find(currentPage)==residentPages.end()){
+                // Page is not already resident, so add it to the set
+                residentPages.insert(currentPage);
+                // Increase the number of faults
+                nFaults++;
+            }
+            // Add the page number to our numbersOfRS map
+            numbersOfRS[currentPage] = i;
+        }
+ 
+        // When all frames are full and one needs to be removed
+        else{
+            // Is the page resident?
+            if (residentPages.find(currentPage) == residentPages.end()){
+                // Set initial lru value to large int for comparison
+                int lru = INT_MAX;
+                // The page number of the lru page
+                int val;
+                // Go through all resident pages
+                for (auto it=residentPages.begin(); it!=residentPages.end(); it++){
+                    // Get value of lru page
+                    if (numbersOfRS[*it] < lru){
+                        lru = numbersOfRS[*it];
+                        val = *it;
+                    }
+                }
+                // Remove the lru page from our resident page set
+                residentPages.erase(val);
+                // Add in our current non resident page
+                residentPages.insert(currentPage);
+                // Increment page faults
+                nFaults++;
+            }
+            // Increase the number of faults
+            numbersOfRS[currentPage] = i;
+        }
+    }
+    return nFaults;
 }
 
 /*
@@ -116,18 +236,18 @@ int main()
     for (const auto& rs : RS_set)
     {
         int e = e_set[i];
-        page_faults1[e] += algo1(rs, frames);
-        page_faults2[e] += optimalPageReplacementAlgorithm(rs, frames);
+        page_faults1[e] += firstInLastOutAlgorithm(rs, frames);
+        page_faults2[e] += leastRecentlyUsedAlgorithm(rs, frames);
         i = (i + 1) % 7;
     }
 
     // print results and plot by hand.
-    cout << "Algorithm 1\n";
+    cout << "First In, First Out Algorithm\n";
     for (auto e : e_set)
     {
         cout << "e = " << e << ", faults = " << page_faults1[e] << "\n";
     }
-    cout << "\nOptimal Page Replacement Algorithm\n";
+    cout << "\nLeast Recently Used Algorithm\n";
     for (auto e : e_set)
     {
         cout << "e = " << e << ", faults = " << page_faults2[e] << "\n";
