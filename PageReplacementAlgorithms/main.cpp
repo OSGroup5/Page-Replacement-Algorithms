@@ -29,21 +29,29 @@ using namespace std;
 vector<int> generateRS(int P, int s, int e, int m, double t, int size)
 {
     vector<int> rs;
+
+    // Repeat until RS is of desired lenth
     while (rs.size() < size)
     {
+        // Select m random numbers in the range [s:s+e]
         random_device rdi;
         mt19937 rng(rdi());
         uniform_int_distribution<mt19937::result_type> disti(s, min(P, s + e) );
+
+        // Append the numbers to RS
         for (int i = 0; i < m; ++i)
         {
             rs.emplace_back(disti(rng));
         }
 
+        // Generate random number r in the range [0:1]
         random_device rdf;
         default_random_engine eng(rdf());
         uniform_real_distribution<float> distf(0, 1);
         float r = distf(eng);
 
+        // If (r < t), generate new s
+        // Process transitions to a new location s
         if (r < t)
         {
             random_device rdis;
@@ -51,6 +59,7 @@ vector<int> generateRS(int P, int s, int e, int m, double t, int size)
             uniform_int_distribution<mt19937::result_type> distis(s, P - 1);
             s = distis(rngs);
         }
+        // else increment s by 1 (modulo P)
         else
         {
             ++s;
